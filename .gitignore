@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Outputs
+outputs*/
+*.npy
+*.png
+*.csv
+*.json
+
+# VSCode
+.vscode/
