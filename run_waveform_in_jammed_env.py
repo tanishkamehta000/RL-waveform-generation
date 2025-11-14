@@ -18,8 +18,9 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import erfc
 import pandas as pd
+
+from code.reward import compute_reward
 
 
 def guess_db_or_linear(arr: np.ndarray) -> str:
@@ -180,27 +181,6 @@ def sinr_and_metrics(signal_per_bin: np.ndarray, interference_per_bin: np.ndarra
     return sinr_linear, sinr_db, P_sig, P_int
 
 
-def ber_from_sinr(sinr_linear: float, modulation: str) -> float:
-    # approximate AWGN BER formulas
-    # QPSK ~ Q(sqrt(2*Eb/N0)) -> BER ~= 0.5*erfc(sqrt(sinr_linear)) for symbol SNR
-    # For M-QAM approximate via union bound: BER ~= (4/log2(M))*(1-1/np.sqrt(M))*0.5*erfc(np.sqrt(3*log2(M)/(M-1)*sinr_linear))
-    M = 4 if modulation.upper() == "QPSK" else int(modulation.replace("QAM", ""))
-    if M == 4:
-        # QPSK
-        ber = 0.5 * erfc(np.sqrt(sinr_linear))
-        return float(np.clip(ber, 1e-12, 1.0))
-    else:
-        k = np.log2(M)
-        argument = np.sqrt((3.0 * k / (M - 1.0)) * sinr_linear)
-        ber_approx = (4.0 / k) * (1 - 1.0 / np.sqrt(M)) * 0.5 * erfc(argument / np.sqrt(2.0))
-        return float(np.clip(ber_approx, 1e-12, 1.0))
-
-
-def compute_goodput(bw_hz: float, sinr_linear: float, ber: float) -> float:
-    # G = B * log2(1+SINR) * (1-BER)
-    return bw_hz * np.log2(1.0 + sinr_linear) * (1.0 - ber)
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--bg", default="/mnt/data/2.4ghz_passivescan_background_loc1_1.csv")
@@ -211,6 +191,16 @@ def main(argv=None):
     parser.add_argument("--tx_power_dbm", type=float, default=0.0)
     parser.add_argument("--modulation", default="QPSK", choices=["QPSK", "16QAM", "64QAM"])
     parser.add_argument("--output_dir", default="/mnt/data/waveform_run_output")
+    parser.add_argument("--reward-wg", type=float, default=0.7,
+                        help="Weight on normalized goodput term (w_G).")
+    parser.add_argument("--reward-wb", type=float, default=0.3,
+                        help="Weight on normalized BER penalty term (w_B).")
+    parser.add_argument("--reward-eta", type=float, default=0.7,
+                        help="Efficiency factor η used inside the goodput term.")
+    parser.add_argument("--reward-sinr-ref-db", type=float, default=30.0,
+                        help="Reference SINR (dB) used when normalizing goodput.")
+    parser.add_argument("--reward-ber-max", type=float, default=0.5,
+                        help="BER value mapped to the maximum reliability penalty (B̃=1).")
     args = parser.parse_args(argv)
 
     outdir = Path(args.output_dir)
@@ -299,17 +289,21 @@ def main(argv=None):
 
     sinr_linear, sinr_db, P_sig, P_int = sinr_and_metrics(signal_per_bin, interference_per_bin)
 
-    ber = ber_from_sinr(sinr_linear, args.modulation)
-
     bw_hz = args.bandwidth_khz * 1000.0
-    G = compute_goodput(bw_hz, sinr_linear, ber)
-
-    # Normalize G by an arbitrary factor: max theoretical rate for M-QAM with same bw: B*log2(1+SNR_max)
-    # For reward, penalize transmit power (in mW) with small coefficient
-    max_theoretical = bw_hz * np.log2(1.0 + 1e3)  # arbitrary high SNR
-    G_norm = G / (max_theoretical + 1e-12)
-    power_cost = total_tx_mw * 1e-3
-    reward = G_norm - 0.01 * power_cost
+    reward_terms = compute_reward(
+        bw_hz=bw_hz,
+        sinr_linear=sinr_linear,
+        modulation=args.modulation,
+        eta=args.reward_eta,
+        w_g=args.reward_wg,
+        w_b=args.reward_wb,
+        sinr_ref_db=args.reward_sinr_ref_db,
+        ber_max=args.reward_ber_max,
+    )
+    ber = reward_terms["ber"]
+    G = reward_terms["goodput"]
+    G_norm = reward_terms["goodput_norm"]
+    reward = reward_terms["reward"]
 
     # Save JSON
     out = {
@@ -322,6 +316,13 @@ def main(argv=None):
             "tx_power_dbm": args.tx_power_dbm,
             "modulation": args.modulation,
             "n_bins": int(n_bins),
+            "reward": {
+                "w_g": args.reward_wg,
+                "w_b": args.reward_wb,
+                "eta": args.reward_eta,
+                "sinr_ref_db": args.reward_sinr_ref_db,
+                "ber_max": args.reward_ber_max,
+            },
         },
         "results": {
             "P_sig_mw": float(P_sig),
@@ -329,8 +330,14 @@ def main(argv=None):
             "sinr_linear": float(sinr_linear),
             "sinr_db": float(sinr_db),
             "ber": float(ber),
+            "ber_normalized": float(reward_terms["ber_norm"]),
             "goodput_bps": float(G),
             "goodput_normalized": float(G_norm),
+            "reward_weights": reward_terms["weights"],
+            "reward_components": {
+                "goodput_norm": float(G_norm),
+                "ber_norm": float(reward_terms["ber_norm"]),
+            },
             "reward": float(reward),
         }
     }
