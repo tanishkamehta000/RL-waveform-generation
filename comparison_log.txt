@@ -1,0 +1,134 @@
+
+======================================================================
+RL WAVEFORM OPTIMIZATION: BEFORE vs AFTER COMPARISON
+======================================================================
+
+Configuration saved to: comparison_output/20251120_134635/config.json
+
+----------------------------------------------------------------------
+STEP 1: Loading Spectrum Environment
+----------------------------------------------------------------------
+
+  Background: vip_data/2.4ghz_passivescan_background_loc1_1.csv
+  Floor: vip_data/2.4ghz_passivescan_floor_1.csv
+  Jammer: vip_data/2412mhz_jamming_3dbm_gaussiannoise_1.csv
+  ✓ Loaded successfully
+  Frequency range: 2400.00 - 2483.50 MHz
+  Number of bins: 8
+
+----------------------------------------------------------------------
+STEP 2: Initialize Waveform (BEFORE RL)
+----------------------------------------------------------------------
+
+Initial Waveform Performance:
+----------------------------------------------------------------------
+  Waveform Configuration:
+    Center Frequency: 2412.00 MHz
+    Bandwidth: 200.00 kHz
+    TX Power: 0.00 dBm
+    Modulation: OFDM
+
+  Performance Metrics:
+    SINR: -34.81 dB (0.0003 linear)
+    BER: 4.897519e-01
+    Goodput: 0.0000 Mbps (48.6 bps)
+    Signal Power: 1.000000 mW
+    Interference Power: 3030.189518 mW
+
+  Initial Reward: -0.049976
+
+
+----------------------------------------------------------------------
+STEP 3: Training RL Agent
+----------------------------------------------------------------------
+
+  Total actions: 23
+  Training episodes: 150
+  Max steps per episode: 50
+  Learning rate: 0.15
+  Epsilon decay: 0.995
+
+  Training in progress...
+    Episode 10/150 | Reward: -3.4484 | Avg (last 10): -2.5387 | Best: 0.0000 | ε: 0.951
+    Episode 20/150 | Reward: -1.3491 | Avg (last 10): -2.2988 | Best: 0.0000 | ε: 0.905
+    Episode 30/150 | Reward: -1.0158 | Avg (last 10): -1.8139 | Best: 0.0000 | ε: 0.860
+    Episode 40/150 | Reward: -4.0647 | Avg (last 10): -2.0772 | Best: 0.0000 | ε: 0.818
+    Episode 50/150 | Reward: -1.5324 | Avg (last 10): -2.3938 | Best: 0.0000 | ε: 0.778
+    Episode 60/150 | Reward: -2.1822 | Avg (last 10): -1.6840 | Best: 0.0000 | ε: 0.740
+    Episode 70/150 | Reward: -1.3824 | Avg (last 10): -1.8256 | Best: 0.0000 | ε: 0.704
+    Episode 80/150 | Reward: -1.7990 | Avg (last 10): -1.7156 | Best: 0.0000 | ε: 0.670
+    Episode 90/150 | Reward: -0.6992 | Avg (last 10): -1.1391 | Best: 0.0000 | ε: 0.637
+    Episode 100/150 | Reward: -1.9156 | Avg (last 10): -1.6373 | Best: 0.0000 | ε: 0.606
+    Episode 110/150 | Reward: -1.1158 | Avg (last 10): -1.2208 | Best: 0.0000 | ε: 0.576
+    Episode 120/150 | Reward: -0.7326 | Avg (last 10): -1.0341 | Best: 0.0000 | ε: 0.548
+    Episode 130/150 | Reward: -1.3490 | Avg (last 10): -0.6942 | Best: 0.0000 | ε: 0.521
+    Episode 140/150 | Reward: -0.2993 | Avg (last 10): -0.6392 | Best: 0.0000 | ε: 0.496
+    Episode 150/150 | Reward: -0.1993 | Avg (last 10): -0.2560 | Best: 0.0000 | ε: 0.471
+
+  ✓ Training complete!
+  Q-table size: 5 states
+  Best reward achieved: 0.000012
+  Saved agent to: comparison_output/20251120_134635/trained_agent.json
+
+----------------------------------------------------------------------
+STEP 4: Evaluate Optimized Waveform (AFTER RL)
+----------------------------------------------------------------------
+
+Optimized Waveform Performance:
+----------------------------------------------------------------------
+  Waveform Configuration:
+    Center Frequency: 2427.00 MHz
+    Bandwidth: 200.00 kHz
+    TX Power: -3.00 dBm
+    Modulation: OFDM
+
+  Performance Metrics:
+    SINR: -37.81 dB (0.0002 linear)
+    BER: 4.927445e-01
+    Goodput: 0.0000 Mbps (24.2 bps)
+    Signal Power: 0.501187 mW
+    Interference Power: 3030.189518 mW
+
+  Optimized Reward: 0.000012
+
+
+----------------------------------------------------------------------
+STEP 5: Comparison Summary
+----------------------------------------------------------------------
+
+  SINR:
+    Initial: -34.81 dB
+    Optimized: -37.81 dB
+    Change: -3.00 dB (-49.9%)
+
+  BER:
+    Initial: 4.897519e-01
+    Optimized: 4.927445e-01
+    Reduction: -0.6%
+
+  Goodput:
+    Initial: 0.0000 Mbps
+    Optimized: 0.0000 Mbps
+    Change: -0.0000 Mbps (-50.2%)
+
+  Waveform Adjustments:
+    Frequency shift: +15.00 MHz
+    Bandwidth change: +0.00 kHz
+    Power change: -3.00 dBm
+
+  Overall Assessment:
+    ⚠️  LIMITED: RL agent found minimal improvement
+       (Initial waveform may already be near-optimal)
+
+----------------------------------------------------------------------
+STEP 6: Saving Results
+----------------------------------------------------------------------
+
+  ✓ Saved results to: comparison_output/20251120_134635/comparison_results.json
+  Creating visualizations...
+  Saved comparison plot to: comparison_output/20251120_134635/before_after_comparison.png
+
+======================================================================
+DONE! All results saved to: comparison_output/20251120_134635
+======================================================================
+

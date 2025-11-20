@@ -184,6 +184,13 @@ def ber_from_sinr(sinr_linear: float, modulation: str) -> float:
     # approximate AWGN BER formulas
     # QPSK ~ Q(sqrt(2*Eb/N0)) -> BER ~= 0.5*erfc(sqrt(sinr_linear)) for symbol SNR
     # For M-QAM approximate via union bound: BER ~= (4/log2(M))*(1-1/np.sqrt(M))*0.5*erfc(np.sqrt(3*log2(M)/(M-1)*sinr_linear))
+    # For OFDM, we use QPSK modulation on subcarriers
+    
+    if modulation.upper() == "OFDM":
+        # OFDM with QPSK subcarrier modulation
+        ber = 0.5 * erfc(np.sqrt(sinr_linear))
+        return float(np.clip(ber, 1e-12, 1.0))
+    
     M = 4 if modulation.upper() == "QPSK" else int(modulation.replace("QAM", ""))
     if M == 4:
         # QPSK
@@ -209,7 +216,7 @@ def main(argv=None):
     parser.add_argument("--center_freq_mhz", type=float, default=2412.0)
     parser.add_argument("--bandwidth_khz", type=float, default=200.0)
     parser.add_argument("--tx_power_dbm", type=float, default=0.0)
-    parser.add_argument("--modulation", default="QPSK", choices=["QPSK", "16QAM", "64QAM"])
+    parser.add_argument("--modulation", default="OFDM", choices=["QPSK", "16QAM", "64QAM", "OFDM"])
     parser.add_argument("--output_dir", default="/mnt/data/waveform_run_output")
     args = parser.parse_args(argv)
 
